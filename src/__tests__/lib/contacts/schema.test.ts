@@ -81,4 +81,14 @@ describe("formDataToValues", () => {
       [...CONTACT_FIELDS.map((field) => field.name), "photo_data_url", "addresses"].sort(),
     );
   });
+
+  it("keeps malformed address JSON invalid instead of treating it as a clear", () => {
+    const formData = new FormData();
+    formData.set("addresses", "not-json");
+
+    const result = contactInputSchema.safeParse(formDataToValues(formData));
+
+    expect(result.success).toBe(false);
+    expect(zodFieldErrors(result.error!)).toHaveProperty("addresses");
+  });
 });

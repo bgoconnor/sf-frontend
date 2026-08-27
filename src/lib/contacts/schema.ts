@@ -192,11 +192,11 @@ export const CONTACT_FIELDS: ContactFieldSpec[] = CONTACT_FIELD_GROUPS.flatMap(
 export function formDataToValues(
   formData: FormData,
 ): ContactFormValues {
-  let addresses: AddressInput[] = [];
+  let addresses: unknown = [];
   try {
     addresses = JSON.parse(String(formData.get("addresses") ?? "[]")) as AddressInput[];
   } catch {
-    addresses = [];
+    addresses = "Invalid address data";
   }
   return {
     ...Object.fromEntries(
