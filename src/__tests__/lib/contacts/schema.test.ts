@@ -5,7 +5,7 @@ import {
   zodFieldErrors,
 } from "@/lib/contacts/schema";
 
-function values(overrides: Record<string, string> = {}) {
+function values(overrides: Record<string, unknown> = {}) {
   return {
     first_name: "Ada",
     last_name: "Lovelace",
@@ -13,11 +13,7 @@ function values(overrides: Record<string, string> = {}) {
     phone: "",
     company: "",
     job_title: "",
-    address: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
+    addresses: [],
     notes: "",
     photo_data_url: "",
     ...overrides,
@@ -60,12 +56,11 @@ describe("contactInputSchema", () => {
 
   it("enforces the API's length limits", () => {
     const result = contactInputSchema.safeParse(
-      values({ first_name: "a".repeat(101), postal_code: "9".repeat(21) }),
+      values({ first_name: "a".repeat(101) }),
     );
 
     expect(zodFieldErrors(result.error!)).toEqual({
       first_name: "First name must be 100 characters or fewer",
-      postal_code: "Postal code must be 20 characters or fewer",
     });
   });
 });
@@ -81,8 +76,19 @@ describe("formDataToValues", () => {
 
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
+    expect(extracted.addresses).toEqual([]);
     expect(Object.keys(extracted).sort()).toEqual(
-      [...CONTACT_FIELDS.map((field) => field.name), "photo_data_url"].sort(),
+      [...CONTACT_FIELDS.map((field) => field.name), "photo_data_url", "addresses"].sort(),
     );
+  });
+
+  it("keeps malformed address JSON invalid instead of treating it as a clear", () => {
+    const formData = new FormData();
+    formData.set("addresses", "not-json");
+
+    const result = contactInputSchema.safeParse(formDataToValues(formData));
+
+    expect(result.success).toBe(false);
+    expect(zodFieldErrors(result.error!)).toHaveProperty("addresses");
   });
 });

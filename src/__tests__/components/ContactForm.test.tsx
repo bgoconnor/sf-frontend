@@ -39,8 +39,7 @@ describe("ContactForm", () => {
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
-    // Nulls become empty inputs rather than the string "null".
-    expect(screen.getByLabelText(/street address/i)).toHaveValue("");
+    expect(screen.getByText("No addresses added.")).toBeInTheDocument();
     expect(screen.getByAltText("Photo preview")).toBeInTheDocument();
     expect(document.querySelector<HTMLInputElement>('input[name="photo_data_url"]')).toHaveValue(
       "data:image/png;base64,iVBORw0KGgo=",
@@ -97,6 +96,24 @@ describe("ContactForm", () => {
       "href",
       "/contacts",
     );
+  });
+
+  it("adds, edits, and removes address rows", async () => {
+    renderForm(jest.fn());
+
+    await userEvent.click(screen.getByRole("button", { name: /add address/i }));
+    await userEvent.selectOptions(screen.getByLabelText("Address 1 type"), "Work");
+    await userEvent.type(screen.getByLabelText("Address 1 Street address"), "1 Market St");
+    await userEvent.type(screen.getByLabelText("Address 1 City"), "San Francisco");
+
+    const hidden = document.querySelector<HTMLInputElement>('input[name="addresses"]');
+    expect(JSON.parse(hidden?.value ?? "[]")).toEqual([
+      expect.objectContaining({ type: "Work", street_address: "1 Market St", city: "San Francisco" }),
+    ]);
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove address 1" }));
+    expect(screen.getByText("No addresses added.")).toBeInTheDocument();
+    expect(hidden).toHaveValue("[]");
   });
 
   it("previews and removes a supported photo", async () => {

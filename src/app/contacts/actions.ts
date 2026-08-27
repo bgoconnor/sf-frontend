@@ -41,7 +41,7 @@ export async function saveContactAction(
   const values = formDataToValues(formData);
   // The client keeps its preview state; do not serialize a multi-megabyte image
   // back through React when returning validation or API errors.
-  const errorValues = { ...values, photo_data_url: "" };
+  const errorValues = { ...values, photo_data_url: "" } as FormState["values"];
 
   const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
