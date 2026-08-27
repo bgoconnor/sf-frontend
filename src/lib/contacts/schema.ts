@@ -52,6 +52,17 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
+  photo_data_url: z
+    .string()
+    .refine(
+      (value) =>
+        value === "" ||
+        /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]*={0,2}$/.test(value),
+      "Choose a JPEG, PNG, or WebP image",
+    )
+    .transform((value) => value || null)
+    .nullable()
+    .default(null),
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;
@@ -219,9 +230,9 @@ export function formDataToValues(
   formData: FormData,
 ): Record<keyof ContactInput, string> {
   return Object.fromEntries(
-    CONTACT_FIELDS.map((field) => [
-      field.name,
-      String(formData.get(field.name) ?? ""),
+    [...CONTACT_FIELDS.map((field) => field.name), "photo_data_url"].map((name) => [
+      name,
+      String(formData.get(name) ?? ""),
     ]),
   ) as Record<keyof ContactInput, string>;
 }

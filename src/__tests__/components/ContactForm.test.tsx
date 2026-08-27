@@ -25,15 +25,26 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/^email/i)).toBeRequired();
     expect(screen.getByLabelText(/phone/i)).not.toBeRequired();
     expect(screen.getByLabelText(/notes/i).tagName).toBe("TEXTAREA");
+    expect(screen.getByLabelText(/contact photo/i)).toHaveAttribute(
+      "accept",
+      "image/jpeg,image/png,image/webp",
+    );
   });
 
   it("prefills from an existing contact", () => {
-    renderForm(jest.fn(), makeContact());
+    renderForm(
+      jest.fn(),
+      makeContact({ photo_data_url: "data:image/png;base64,iVBORw0KGgo=" }),
+    );
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
     // Nulls become empty inputs rather than the string "null".
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
+    expect(screen.getByAltText("Photo preview")).toBeInTheDocument();
+    expect(document.querySelector<HTMLInputElement>('input[name="photo_data_url"]')).toHaveValue(
+      "data:image/png;base64,iVBORw0KGgo=",
+    );
   });
 
   it("submits the entered values to the action", async () => {
@@ -86,5 +97,38 @@ describe("ContactForm", () => {
       "href",
       "/contacts",
     );
+  });
+
+  it("previews and removes a supported photo", async () => {
+    renderForm(jest.fn());
+    const photo = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "avatar.png", {
+      type: "image/png",
+    });
+
+    await userEvent.upload(screen.getByLabelText(/contact photo/i), photo);
+    expect(await screen.findByAltText("Photo preview")).toBeInTheDocument();
+    expect(document.querySelector<HTMLInputElement>('input[name="photo_data_url"]')?.value).toMatch(
+      /^data:image\/png;base64,/,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /remove photo/i }));
+    expect(screen.queryByAltText("Photo preview")).not.toBeInTheDocument();
+    expect(document.querySelector<HTMLInputElement>('input[name="photo_data_url"]')).toHaveValue("");
+    expect(screen.getByLabelText(/contact photo/i)).toHaveValue("");
+  });
+
+  it("rejects unsupported and oversized files", async () => {
+    renderForm(jest.fn());
+    const input = screen.getByLabelText(/contact photo/i);
+    const user = userEvent.setup({ applyAccept: false });
+
+    await user.upload(input, new File(["gif"], "avatar.gif", { type: "image/gif" }));
+    expect(screen.getByText("Choose a JPEG, PNG, or WebP image.")).toBeInTheDocument();
+
+    await user.upload(
+      input,
+      new File([new Uint8Array(2 * 1024 * 1024 + 1)], "large.png", { type: "image/png" }),
+    );
+    expect(screen.getByText("Photo must be 2 MiB or smaller.")).toBeInTheDocument();
   });
 });
