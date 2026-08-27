@@ -114,6 +114,7 @@ describe("ContactForm", () => {
     await userEvent.click(screen.getByRole("button", { name: /remove photo/i }));
     expect(screen.queryByAltText("Photo preview")).not.toBeInTheDocument();
     expect(document.querySelector<HTMLInputElement>('input[name="photo_data_url"]')).toHaveValue("");
+    expect(screen.getByLabelText(/contact photo/i)).toHaveValue("");
   });
 
   it("rejects unsupported and oversized files", async () => {

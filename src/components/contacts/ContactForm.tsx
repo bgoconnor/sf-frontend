@@ -57,6 +57,7 @@ export default function ContactForm({
   );
   const [photoError, setPhotoError] = useState<string>();
   const photoReadId = useRef(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const displayedPhotoError = photoError ?? state.fieldErrors?.photo_data_url;
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -131,6 +132,7 @@ export default function ContactForm({
             </label>
             <input
               id="contact-photo"
+              ref={photoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={choosePhoto}
@@ -145,6 +147,7 @@ export default function ContactForm({
                   photoReadId.current += 1;
                   setPhotoDataUrl("");
                   setPhotoError(undefined);
+                  if (photoInputRef.current) photoInputRef.current.value = "";
                 }}
                 className="text-sm text-destructive hover:underline"
               >
