@@ -51,20 +51,44 @@ describe("jobLine", () => {
 
 describe("addressLine", () => {
   it("skips the parts that are not filled in", () => {
-    expect(addressLine(makeContact())).toBe("San Francisco, CA, USA");
+    expect(
+      addressLine({
+        id: 1,
+        type: "Home",
+        street_address: "1 Main St",
+        city: "San Francisco",
+        state: "CA",
+        postal_code: null,
+        country: "USA",
+      }),
+    ).toBe("1 Main St, San Francisco, CA, USA");
   });
 
   it("pairs the state with the postal code", () => {
     expect(
-      addressLine(makeContact({ address: "1 Market St", postal_code: "94105" })),
+      addressLine({
+        id: 1,
+        type: "Work",
+        street_address: "1 Market St",
+        city: "San Francisco",
+        state: "CA",
+        postal_code: "94105",
+        country: "USA",
+      }),
     ).toBe("1 Market St, San Francisco, CA 94105, USA");
   });
 
   it("returns null when there is no address at all", () => {
     expect(
-      addressLine(
-        makeContact({ city: null, state: null, country: null, postal_code: null }),
-      ),
+      addressLine({
+        id: 1,
+        type: "Other",
+        street_address: "",
+        city: null,
+        state: null,
+        country: null,
+        postal_code: null,
+      }),
     ).toBeNull();
   });
 });

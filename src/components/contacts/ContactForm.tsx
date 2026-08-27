@@ -3,7 +3,7 @@
 import { type ChangeEvent, useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
 import Field from "@/components/ui/Field";
 import Button, { buttonClasses } from "@/components/ui/Button";
 import { CONTACT_FIELD_GROUPS } from "@/lib/contacts/schema";
@@ -12,6 +12,7 @@ import {
   type Contact,
   type ContactInput,
   type FormState,
+  type AddressInput,
 } from "@/lib/contacts/types";
 
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
@@ -59,6 +60,9 @@ export default function ContactForm({
   const photoReadId = useRef(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const displayedPhotoError = photoError ?? state.fieldErrors?.photo_data_url;
+  const [addresses, setAddresses] = useState<AddressInput[]>(
+    state.values?.addresses ?? contact?.addresses ?? [],
+  );
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
     const readId = ++photoReadId.current;
@@ -88,8 +92,16 @@ export default function ContactForm({
     reader.readAsDataURL(file);
   }
 
-  function valueFor(name: keyof ContactInput): string {
+  function valueFor(name: Exclude<keyof ContactInput, "addresses">): string {
     return state.values?.[name] ?? contact?.[name] ?? "";
+  }
+
+  function updateAddress(index: number, patch: Partial<AddressInput>) {
+    setAddresses((current) =>
+      current.map((address, addressIndex) =>
+        addressIndex === index ? { ...address, ...patch } : address,
+      ),
+    );
   }
 
   return (
@@ -188,6 +200,105 @@ export default function ContactForm({
           </div>
         </fieldset>
       ))}
+
+      <fieldset className="space-y-4">
+        <legend className="sr-only">Addresses</legend>
+        <div className="flex items-end justify-between gap-4 border-b border-hairline pb-2">
+          <div>
+            <h2 className="font-display text-sm font-semibold text-foreground">Addresses</h2>
+            <p className="text-[13px] text-muted-foreground">
+              Add any number of Home, Work, or Other addresses.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              setAddresses((current) => [
+                ...current,
+                {
+                  type: "Home",
+                  street_address: "",
+                  city: null,
+                  state: null,
+                  postal_code: null,
+                  country: null,
+                },
+              ])
+            }
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add address
+          </Button>
+        </div>
+        <input type="hidden" name="addresses" value={JSON.stringify(addresses)} />
+        {addresses.length ? (
+          <div className="space-y-4">
+            {addresses.map((address, index) => (
+              <div key={index} className="rounded-lg border border-border bg-card/50 p-4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <label className="text-sm font-medium text-foreground">
+                    Address {index + 1}
+                    <select
+                      aria-label={`Address ${index + 1} type`}
+                      value={address.type}
+                      onChange={(event) =>
+                        updateAddress(index, { type: event.target.value as AddressInput["type"] })
+                      }
+                      className="ml-3 rounded-md border border-border bg-input px-2 py-1.5 text-sm"
+                    >
+                      <option>Home</option>
+                      <option>Work</option>
+                      <option>Other</option>
+                    </select>
+                  </label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Remove address ${index + 1}`}
+                    onClick={() =>
+                      setAddresses((current) => current.filter((_, itemIndex) => itemIndex !== index))
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {([
+                    ["street_address", "Street address", 300],
+                    ["city", "City", 120],
+                    ["state", "State / region", 120],
+                    ["postal_code", "Postal code", 20],
+                    ["country", "Country", 120],
+                  ] as const).map(([name, label, maxLength]) => (
+                    <label key={name} className={name === "street_address" ? "sm:col-span-2" : ""}>
+                      <span className="mb-1.5 block text-[13px] font-medium text-foreground">
+                        {label}{name === "street_address" ? " *" : ""}
+                      </span>
+                      <input
+                        aria-label={`Address ${index + 1} ${label}`}
+                        required={name === "street_address"}
+                        maxLength={maxLength}
+                        value={address[name] ?? ""}
+                        onChange={(event) => updateAddress(index, { [name]: event.target.value || null })}
+                        className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-md border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground">
+            No addresses added.
+          </p>
+        )}
+        {state.fieldErrors?.addresses ? (
+          <p role="alert" className="text-sm text-destructive">{state.fieldErrors.addresses}</p>
+        ) : null}
+      </fieldset>
 
       <div className="flex items-center gap-2 border-t border-hairline pt-4">
         <SubmitButton label={submitLabel} />
