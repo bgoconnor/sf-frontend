@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useActionState, useState } from "react";
+import { type ChangeEvent, useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -56,9 +56,11 @@ export default function ContactForm({
     state.values?.photo_data_url ?? contact?.photo_data_url ?? "",
   );
   const [photoError, setPhotoError] = useState<string>();
+  const photoReadId = useRef(0);
   const displayedPhotoError = photoError ?? state.fieldErrors?.photo_data_url;
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const readId = ++photoReadId.current;
     const file = event.target.files?.[0];
     if (!file) return;
     if (!PHOTO_TYPES.includes(file.type)) {
@@ -74,10 +76,12 @@ export default function ContactForm({
 
     const reader = new FileReader();
     reader.addEventListener("load", () => {
+      if (photoReadId.current !== readId) return;
       setPhotoDataUrl(String(reader.result));
       setPhotoError(undefined);
     });
     reader.addEventListener("error", () => {
+      if (photoReadId.current !== readId) return;
       setPhotoError("The photo could not be read. Try another file.");
     });
     reader.readAsDataURL(file);
@@ -138,6 +142,7 @@ export default function ContactForm({
               <button
                 type="button"
                 onClick={() => {
+                  photoReadId.current += 1;
                   setPhotoDataUrl("");
                   setPhotoError(undefined);
                 }}
