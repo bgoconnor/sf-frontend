@@ -59,6 +59,21 @@ describe("ContactsTable", () => {
 
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
+
+  it("renders a stored photo instead of initials", () => {
+    const { container } = render(
+      <ContactsTable
+        contacts={[{ ...CONTACTS[0], photo_data_url: "data:image/png;base64,iVBORw0KGgo=" }]}
+        query={DEFAULT_LIST_QUERY}
+      />,
+    );
+
+    expect(container.querySelector("img")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,iVBORw0KGgo=",
+    );
+    expect(container).not.toHaveTextContent("AL");
+  });
 });
 
 describe("Pagination", () => {

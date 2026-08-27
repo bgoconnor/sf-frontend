@@ -30,6 +30,7 @@ const INPUT: ContactInput = {
   postal_code: null,
   country: null,
   notes: null,
+  photo_data_url: null,
 };
 
 describe("listContacts", () => {

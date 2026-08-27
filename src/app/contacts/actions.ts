@@ -39,6 +39,9 @@ export async function saveContactAction(
   formData: FormData,
 ): Promise<FormState> {
   const values = formDataToValues(formData);
+  // The client keeps its preview state; do not serialize a multi-megabyte image
+  // back through React when returning validation or API errors.
+  const errorValues = { ...values, photo_data_url: "" };
 
   const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -46,7 +49,7 @@ export async function saveContactAction(
       status: "error",
       message: "Please fix the highlighted fields.",
       fieldErrors: zodFieldErrors(parsed.error),
-      values,
+      values: errorValues,
     };
   }
 
@@ -58,7 +61,7 @@ export async function saveContactAction(
         : await replaceContact(contactId, parsed.data);
   } catch (error) {
     if (error instanceof ApiUnreachableError) {
-      return { status: "error", message: UNREACHABLE, values };
+      return { status: "error", message: UNREACHABLE, values: errorValues };
     }
     if (error instanceof ApiError) {
       if (error.status === 409) {
@@ -68,7 +71,7 @@ export async function saveContactAction(
           fieldErrors: {
             email: apiErrorMessage(error, "This email is already in use."),
           },
-          values,
+          values: errorValues,
         };
       }
       if (error.status === 422) {
@@ -76,13 +79,13 @@ export async function saveContactAction(
           status: "error",
           message: "The API rejected these values.",
           fieldErrors: toFieldErrors(error),
-          values,
+          values: errorValues,
         };
       }
       return {
         status: "error",
         message: apiErrorMessage(error, "The contact could not be saved."),
-        values,
+        values: errorValues,
       };
     }
     throw error;

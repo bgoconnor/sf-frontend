@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import { avatarHue, initials } from "@/lib/contacts/format";
 import type { Contact } from "@/lib/contacts/types";
 
@@ -13,7 +14,7 @@ export default function ContactAvatar({
   contact,
   size = "md",
 }: {
-  contact: Pick<Contact, "first_name" | "last_name" | "email">;
+  contact: Pick<Contact, "first_name" | "last_name" | "email" | "photo_data_url">;
   size?: keyof typeof SIZES;
 }) {
   const style = {
@@ -26,7 +27,18 @@ export default function ContactAvatar({
       style={style}
       className={`contact-avatar inline-flex shrink-0 select-none items-center justify-center rounded-full font-display font-semibold ${SIZES[size]}`}
     >
-      {initials(contact)}
+      {contact.photo_data_url ? (
+        <Image
+          src={contact.photo_data_url}
+          alt=""
+          width={56}
+          height={56}
+          unoptimized
+          className="h-full w-full rounded-full object-cover"
+        />
+      ) : (
+        initials(contact)
+      )}
     </span>
   );
 }
